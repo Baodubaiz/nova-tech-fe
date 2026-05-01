@@ -1,0 +1,68 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { publicRoutes, authRoutes, apiAuthPrefix, DEFAULT_LOGIN_REDIRECT, adminRoutes } from '@/config/routes.config';
+
+export function middleware(request: NextRequest) {
+  const { nextUrl } = request;
+
+  // Check if the user is logged in by verifying the existence of a token in cookies
+  // Adjust 'accessToken' to whatever cookie name you will use to store the token
+  const isLoggedIn = !!request.cookies.get('accessToken')?.value;
+
+  const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
+  
+  // Public routes might have dynamic parameters (like /products/[id]), 
+  // so we check if the path starts with a public route or matches exactly.
+  // For strict matching, you can use a more advanced matching logic.
+  const isPublicRoute = publicRoutes.some(route => {
+    if (route === '/') return nextUrl.pathname === '/';
+    return nextUrl.pathname.startsWith(route);
+  });
+
+  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
+  const isAdminRoute = adminRoutes.some(route => nextUrl.pathname.startsWith(route));
+
+  if (isApiAuthRoute) {
+    return NextResponse.next();
+  }
+
+  // If trying to access an auth route (login/register) while already logged in
+  if (isAuthRoute) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
+    }
+    return NextResponse.next();
+  }
+
+  // If not logged in and trying to access a protected route
+  if (!isLoggedIn && !isPublicRoute) {
+    // Save the original URL to redirect back after login
+    let callbackUrl = nextUrl.pathname;
+    if (nextUrl.search) {
+      callbackUrl += nextUrl.search;
+    }
+    
+    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
+    
+    return NextResponse.redirect(
+      new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl)
+    );
+  }
+
+  // NOTE: Role-based access control (Admin) usually requires decoding the JWT or fetching user profile.
+  // In Next.js middleware, you can decode a JWT if it's not encrypted, or you can verify it if you use a lightweight library like 'jose'.
+  // For now, if it's an admin route, we just ensure they are logged in (handled above).
+  // You may want to add role verification here later.
+
+  return NextResponse.next();
+}
+
+// Optionally, configure the matcher to apply middleware only to specific paths
+export const config = {
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
+};
