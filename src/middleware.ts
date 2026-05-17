@@ -49,10 +49,12 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  // NOTE: Role-based access control (Admin) usually requires decoding the JWT or fetching user profile.
-  // In Next.js middleware, you can decode a JWT if it's not encrypted, or you can verify it if you use a lightweight library like 'jose'.
-  // For now, if it's an admin route, we just ensure they are logged in (handled above).
-  // You may want to add role verification here later.
+  // If logged in and trying to access an admin route
+  if (isAdminRoute && isLoggedIn) {
+    // Note: Here we should ideally check the user's role from the token or profile.
+    // For now, this is a placeholder for role-based check if needed.
+    // console.log('Checking admin access for:', nextUrl.pathname);
+  }
 
   return NextResponse.next();
 }
