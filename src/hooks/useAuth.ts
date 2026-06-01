@@ -26,7 +26,7 @@ export const useAuth = () => {
         // Redirect based on role
         const role = typeof data.user.role === 'string' 
           ? data.user.role 
-          : (data.user.role?.name || 'USER');
+          : (data.user.role?.roleName || data.user.role?.name || 'USER');
           
         if (role === 'ADMIN') {
           router.push(routes.adminDashboard);
@@ -52,7 +52,7 @@ export const useAuth = () => {
         // Redirect based on role
         const role = typeof data.user.role === 'string' 
           ? data.user.role 
-          : (data.user.role?.name || 'USER');
+          : (data.user.role?.roleName || data.user.role?.name || 'USER');
           
         if (role === 'ADMIN') {
           await new Promise(resolve => setTimeout(resolve, 1500));

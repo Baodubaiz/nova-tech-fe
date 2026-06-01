@@ -2,12 +2,38 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { publicRoutes, authRoutes, apiAuthPrefix, DEFAULT_LOGIN_REDIRECT, adminRoutes } from '@/config/routes.config';
 
+function getRoleFromToken(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = parts[1];
+    const base64Url = payload;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const parsed = JSON.parse(jsonPayload);
+    
+    if (parsed.roles && Array.isArray(parsed.roles) && parsed.roles.length > 0) {
+      return parsed.roles[0];
+    }
+    return null;
+  } catch (e) {
+    console.error('Failed to parse token in middleware:', e);
+    return null;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { nextUrl } = request;
 
   // Check if the user is logged in by verifying the existence of a token in cookies
   // Adjust 'accessToken' to whatever cookie name you will use to store the token
-  const isLoggedIn = !!request.cookies.get('accessToken')?.value;
+  const token = request.cookies.get('accessToken')?.value;
+  const isLoggedIn = !!token;
 
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   
@@ -24,6 +50,16 @@ export function middleware(request: NextRequest) {
 
   if (isApiAuthRoute) {
     return NextResponse.next();
+  }
+
+  // Redirect admin users accessing public routes (like Homepage) or auth routes
+  if (isLoggedIn) {
+    const role = token ? getRoleFromToken(token) : null;
+    if (role === 'ADMIN') {
+      if (nextUrl.pathname === '/' || isAuthRoute) {
+        return NextResponse.redirect(new URL('/admin', nextUrl));
+      }
+    }
   }
 
   // If trying to access an auth route (login/register) while already logged in

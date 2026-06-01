@@ -11,7 +11,8 @@ export type RegisterRequest = {
 
 export type Role = {
   id: string;
-  name: string;
+  name?: string;
+  roleName?: string;
 };
 
 export type AuthUser = {
@@ -22,6 +23,8 @@ export type AuthUser = {
   role?: string | Role;
   roles?: string[];
   avatarUrl?: string;
+  phone?: string;
+  isActive?: boolean;
 };
 
 export type AuthResponse = {
