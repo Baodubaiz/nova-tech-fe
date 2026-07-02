@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import productService from '@/services/product.service';
+import { useProduct } from '@/hooks/useProduct';
 import { Product, ProductVariant } from '@/types/product';
 import { 
   Database, 
@@ -24,6 +24,7 @@ interface CompiledStockItem {
 }
 
 export default function AdminInventoryPage() {
+  const { getProducts, getVariantsByProduct } = useProduct();
   const [stockItems, setStockItems] = useState<CompiledStockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +42,7 @@ export default function AdminInventoryPage() {
       setError(null);
 
       // 1. Fetch products
-      const productsRes = await productService.getProducts(0, 50); // Get first 50 products
+      const productsRes = await getProducts(0, 50); // Get first 50 products
       const productsList = productsRes.content || [];
 
       // 2. Fetch variants for each product in parallel
@@ -50,7 +51,7 @@ export default function AdminInventoryPage() {
       await Promise.all(
         productsList.map(async (prod: Product) => {
           try {
-            const variantsRes = await productService.getVariantsByProduct(prod.id, 0, 50);
+            const variantsRes = await getVariantsByProduct(prod.id, 0, 50);
             const variantsList = variantsRes.content || [];
             
             variantsList.forEach((v: ProductVariant) => {

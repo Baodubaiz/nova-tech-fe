@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
-import { userService } from '@/services/user.service';
+import { useUser } from '@/hooks/useUser';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { User, Phone, Mail, Shield, UserCog, ShoppingBag, ArrowLeft, Save, Edit3, Loader2 } from 'lucide-react';
@@ -11,7 +11,8 @@ import Link from 'next/link';
 
 export default function UserProfilePage() {
   const { user, logout } = useAuth();
-  const { updateUser } = useAuthStore();
+  const { updateUser: updateAuthStoreUser } = useAuthStore();
+  const userHook = useUser();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'orders'>('profile');
 
   // Form states
@@ -42,7 +43,7 @@ export default function UserProfilePage() {
 
     try {
       const roleId = typeof user.role === 'object' && user.role !== null ? user.role.id : undefined;
-      const updatedUser = await userService.updateUser(user.id, {
+      const updatedUser = await userHook.updateUser(user.id, {
         name,
         phone,
         avatarUrl: avatarUrl || undefined,
@@ -51,7 +52,7 @@ export default function UserProfilePage() {
       });
       
       // Update global store state so Header and UI reflect new data
-      updateUser(updatedUser);
+      updateAuthStoreUser(updatedUser);
       setIsEditing(false);
       setMessage({ type: 'success', text: 'Cập nhật thông tin cá nhân thành công!' });
     } catch (error: unknown) {

@@ -2,7 +2,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import categoryService, { CategoryRequest } from '@/services/category.service';
+import { useCategory } from '@/hooks/useCategory';
+import { CategoryRequest } from '@/services/category.service';
 import { Category } from '@/types/product';
 import { 
   Plus, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminCategoriesPage() {
+  const { getCategories, createCategory, updateCategory, deleteCategory } = useCategory();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export default function AdminCategoriesPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await categoryService.getCategories(pageNumber, 10);
+      const res = await getCategories(pageNumber, 10);
       setCategories(res.content || []);
       setPage(res.number);
       setTotalPages(res.totalPages);
@@ -84,9 +86,9 @@ export default function AdminCategoriesPage() {
     try {
       const payload: CategoryRequest = { name: name.trim(), slug: slug.trim() };
       if (editingCategory) {
-        await categoryService.updateCategory(editingCategory.id, payload);
+        await updateCategory(editingCategory.id, payload);
       } else {
-        await categoryService.createCategory(payload);
+        await createCategory(payload);
       }
       setShowModal(false);
       fetchCategories(editingCategory ? page : 0);
@@ -100,7 +102,7 @@ export default function AdminCategoriesPage() {
   const handleDelete = async () => {
     if (!deletingCategory) return;
     try {
-      await categoryService.deleteCategory(deletingCategory.id);
+      await deleteCategory(deletingCategory.id);
       setDeletingCategory(null);
       fetchCategories(0);
     } catch (err: unknown) {

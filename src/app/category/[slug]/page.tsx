@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductCard } from '@/components/product/ProductCard';
-import { productService } from '@/services/product.service';
-import { categoryService } from '@/services/category.service';
+import { useProduct } from '@/hooks/useProduct';
+import { useCategory } from '@/hooks/useCategory';
 import { Product, Category } from '@/types/product';
 import { Cpu, Smartphone, Laptop, Monitor, Headphones, HardDrive, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 
@@ -20,6 +20,8 @@ const CATEGORY_META: Record<string, { name: string; icon: any; bannerColor: stri
 };
 
 export default function CategoryPage() {
+  const { getProducts } = useProduct();
+  const { getCategories } = useCategory();
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
@@ -42,7 +44,7 @@ export default function CategoryPage() {
       try {
         setLoading(true);
         // Load categories to find the correct database category matching our slug
-        const catRes = await categoryService.getCategories(0, 100);
+        const catRes = await getCategories(0, 100);
         const dbCategories = catRes.content || [];
         setCategories(dbCategories);
 
@@ -62,7 +64,7 @@ export default function CategoryPage() {
         });
 
         // Fetch products
-        const prodRes = await productService.getProducts(0, 100);
+        const prodRes = await getProducts(0, 100);
         const allProducts = prodRes.content || [];
 
         if (matchingCategory) {

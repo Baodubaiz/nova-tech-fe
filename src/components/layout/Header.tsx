@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { routes } from '@/config/routes.config';
 import { ShoppingCart, Search, Menu, X, LogIn, LogOut, User, Smartphone, Laptop, Monitor, Headphones, HardDrive, Cpu } from 'lucide-react';
-import cartService from '@/services/cart.service';
+import { useCart } from '@/hooks/useCart';
 import { Cart } from '@/types/cart';
 
 interface HeaderProps {
@@ -25,6 +25,7 @@ const CATEGORIES = [
 
 export const Header: React.FC<HeaderProps> = ({ onSearch, cartTrigger = 0 }) => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { getCart } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cart, setCart] = useState<Cart | null>(null);
@@ -33,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, cartTrigger = 0 }) => 
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const data = await cartService.getCart(user?.id);
+        const data = await getCart(user?.id);
         setCart(data);
       } catch (err) {
         console.warn('Lỗi khi lấy giỏ hàng:', err);
