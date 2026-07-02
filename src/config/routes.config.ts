@@ -6,6 +6,9 @@
 export const publicRoutes = [
   '/',
   '/products',
+  '/product',
+  '/category',
+  '/cart',
   '/about',
   '/contact',
 ];
@@ -46,3 +49,11 @@ export const adminRoutes = [
   '/admin/products',
   '/admin/orders',
 ];
+
+export const routes = {
+  home: "/",
+  login: "/login",
+  register: "/register",
+  adminDashboard: "/admin",
+  userDashboard: "/user",
+};
