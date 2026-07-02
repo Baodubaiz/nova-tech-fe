@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import { cn } from '@/lib/utils';
@@ -30,6 +32,15 @@ export default function AnimatedAuthPage({ initialMode = 'login' }: AnimatedAuth
 
       {/* Background Lighting (Sáng rực rỡ) */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(6,182,212,0.1),transparent),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.1),transparent)] z-0" />
+
+      {/* Nút quay về trang chủ */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white backdrop-blur-sm border border-slate-200 rounded-full text-sm font-semibold text-slate-700 hover:text-slate-900 shadow-sm transition-all hover:scale-105 active:scale-95 no-underline"
+      >
+        <ArrowLeft className="w-4 h-4 text-blue-600" />
+        Về trang chủ
+      </Link>
 
       <div className="relative w-full h-screen flex flex-col overflow-hidden z-10">
 
