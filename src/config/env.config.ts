@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.string().url().default('http://localhost:8080/api'),
-  NEXT_PUBLIC_API_BASE_URL: z.string().url().default('http://localhost:8080/api/v1'),
+  NEXT_PUBLIC_API_URL: z.string().url().default('http://103.179.189.12:8080/api'),
+  NEXT_PUBLIC_API_BASE_URL: z.string().url().default('http://103.179.189.12:8080/api/v1'),
   NEXT_PUBLIC_APP_NAME: z.string().default('NovaTech'),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
   // Add other server/client environment variables here

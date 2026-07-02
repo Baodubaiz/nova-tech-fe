@@ -93,15 +93,11 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col bg-white text-slate-900 overflow-hidden font-sans">
-      {/* Background Neon Glows */}
-      <div className="absolute top-[-5%] left-[-5%] w-[35%] h-[35%] bg-cyan-200/20 rounded-full blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[40%] bg-violet-200/20 rounded-full blur-[130px] pointer-events-none" />
-
+    <div className="relative min-h-screen w-full flex flex-col bg-slate-50 text-slate-900 overflow-hidden font-sans">
       {/* Header */}
       <Header cartTrigger={cartTrigger} />
 
-      <main className="flex-grow z-10">
+      <main className="flex-grow z-10 space-y-6 pb-12">
         {/* Hero Section */}
         <HeroBanner />
 
@@ -134,22 +130,22 @@ export default function HomePage() {
         />
 
         {/* Promotion/Combo Placeholder Banner */}
-        <section className="py-12 bg-white">
+        <section className="bg-slate-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-100 p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+            <div className="relative overflow-hidden rounded-xl bg-blue-600 border border-blue-500 p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
               <div className="space-y-4 text-center md:text-left">
-                <span className="text-xs font-bold text-cyan-700 uppercase tracking-widest bg-cyan-100 px-3 py-1 rounded-full border border-cyan-200">
+                <span className="text-xs font-bold text-blue-800 uppercase tracking-widest bg-yellow-400 px-3 py-1 rounded-sm">
                   Khuyến mãi Combo PC
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-800">
+                <h3 className="text-xl sm:text-2xl font-black text-white">
                   BUILD TRỌN BỘ PC - NHẬN NGAY VOUCHER GIẢM 10%
                 </h3>
-                <p className="text-slate-600 text-sm max-w-lg">
-                  * Chương trình khuyến mãi đặc biệt cho các gói tự lắp đặt PC. Áp dụng cho các sản phẩm CPU + VGA + Mainboard. (Chưa kết nối API Promotion thực tế - Đang dùng UI mô phỏng).
+                <p className="text-blue-100 text-sm max-w-lg">
+                  * Chương trình khuyến mãi đặc biệt cho các gói tự lắp đặt PC. Áp dụng cho các sản phẩm CPU + VGA + Mainboard.
                 </p>
               </div>
-              <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 via-blue-500 to-violet-600 text-white font-bold rounded-xl hover:opacity-90 active:scale-95 shadow-md shrink-0 border-none cursor-pointer">
-                Nhận voucher
+              <button className="px-6 py-3 bg-white text-blue-700 font-bold rounded-lg hover:bg-slate-100 active:scale-95 shadow-md shrink-0 border-none cursor-pointer">
+                Nhận voucher ngay
               </button>
             </div>
           </div>

@@ -60,11 +60,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
   };
 
   return (
-    <div className="group relative flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/50 hover:shadow-lg">
+    <div className="group relative flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       {/* Product Image */}
-      <div className="relative aspect-square w-full bg-slate-50 overflow-hidden flex items-center justify-center p-4">
+      <div className="relative aspect-square w-full bg-white overflow-hidden flex items-center justify-center p-4">
         {hasDiscount && (
-          <span className="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+          <span className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded">
             GIẢM GIÁ
           </span>
         )}
@@ -79,13 +79,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
       </div>
 
       {/* Product Info */}
-      <div className="flex flex-col flex-1 p-4">
+      <div className="flex flex-col flex-1 p-4 pt-2">
         {product.brand && (
-          <span className="text-xs font-semibold text-cyan-600 uppercase tracking-wider mb-1">
+          <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider mb-1">
             {product.brand.name}
           </span>
         )}
-        <h3 className="text-sm font-bold text-slate-800 line-clamp-2 min-h-[40px] mb-2 group-hover:text-cyan-600 transition-colors">
+        <h3 className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[40px] mb-2 group-hover:text-blue-700 transition-colors">
           {product.name}
         </h3>
 
@@ -93,7 +93,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         {defaultVariant?.specs && defaultVariant.specs.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {defaultVariant.specs.slice(0, 2).map((spec) => (
-              <span key={spec.id} className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+              <span key={spec.id} className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
                 {spec.specKey.name}: {spec.value}
               </span>
             ))}
@@ -102,33 +102,33 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
 
         {/* Pricing & Stock */}
         <div className="mt-auto flex flex-col gap-1">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-col">
             {hasDiscount ? (
               <>
-                <span className="text-base font-black text-red-500">
+                <span className="text-base font-bold text-red-600">
                   {formatPrice(discountPrice!)}
                 </span>
-                <span className="text-xs text-slate-400 line-through">
+                <span className="text-[11px] text-slate-400 line-through">
                   {formatPrice(price)}
                 </span>
               </>
             ) : (
-              <span className="text-base font-black text-slate-900">
+              <span className="text-base font-bold text-slate-900">
                 {formatPrice(price)}
               </span>
             )}
           </div>
 
-          <div className="flex items-center justify-between mt-3">
-            <span className={`text-xs ${stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+            <span className={`text-[11px] font-medium ${stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
               {stock > 0 ? `Còn hàng (${stock})` : 'Hết hàng'}
             </span>
             <button
               onClick={handleAddToCart}
               disabled={stock <= 0}
-              className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 via-blue-500 to-violet-600 disabled:from-slate-100 disabled:to-slate-100 disabled:text-slate-400 text-white text-xs font-bold rounded-lg transition-opacity hover:opacity-90 active:scale-95 flex items-center gap-1 border-none cursor-pointer"
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded flex items-center gap-1 border-none cursor-pointer transition-colors"
             >
-              Thêm
+              MUA
             </button>
           </div>
         </div>
