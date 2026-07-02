@@ -6,6 +6,9 @@
 export const publicRoutes = [
   '/',
   '/products',
+  '/product',
+  '/category',
+  '/cart',
   '/about',
   '/contact',
 ];
