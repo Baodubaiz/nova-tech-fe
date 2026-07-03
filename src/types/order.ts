@@ -97,6 +97,7 @@ export interface OrderItemResponse {
 
 export interface OrderResponse extends Order {
   items?: OrderItemResponse[];
+  checkoutUrl?: string; // PayOS trả về khi tạo đơn hàng với phương thức PAYOS
 }
 
 export interface PaymentRequest {

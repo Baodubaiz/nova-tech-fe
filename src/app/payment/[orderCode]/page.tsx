@@ -12,13 +12,49 @@ import { useParams, useRouter } from 'next/navigation';
 export default function PaymentStatusPage() {
   const params = useParams();
   const router = useRouter();
-  const { getPaymentByOrder, cancelPayment, isLoading } = usePayment();
+  const { getPaymentByOrder, createPayment, cancelPayment, isLoading } = usePayment();
   const { user } = useAuth();
   
   const orderCode = params?.orderCode as string;
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [payosLoading, setPayosLoading] = useState(false);
+  const [payosError, setPayosError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  // Tạo / lấy lại PayOS checkout link
+  const generatePayosLink = async (paymentData?: PaymentResponse) => {
+    const target = paymentData || payment;
+    if (!target) return;
+    try {
+      setPayosLoading(true);
+      setPayosError(null);
+      const result = await createPayment({
+        orderCode: target.orderCode,
+        amount: target.amount,
+        description: target.paymentCode || `Thanh toan don hang ${target.orderCode}`,
+        paymentMethod: target.paymentMethod,
+      });
+      if (result.checkoutUrl) {
+        setCheckoutUrl(result.checkoutUrl);
+        // Lưu lại để dùng sau nếu cần
+        sessionStorage.setItem(`payos_checkout_${target.orderCode}`, result.checkoutUrl);
+      } else {
+        setPayosError('Không thể tạo link thanh toán. Vui lòng liên hệ hỗ trợ.');
+      }
+    } catch (err: any) {
+      const msg: string = err.message || '';
+      // Backend báo đã có giao dịch → link cũ đã hết hạn, không thể tạo mới
+      if (msg.includes('đã có giao dịch') || msg.includes('already') || msg.includes('exist')) {
+        setPayosError('Link thanh toán đã hết hạn. Vui lòng hủy giao dịch và đặt hàng lại, hoặc liên hệ hỗ trợ.');
+      } else {
+        setPayosError(msg || 'Không thể tạo link thanh toán. Vui lòng thử lại.');
+      }
+    } finally {
+      setPayosLoading(false);
+    }
+  };
 
   const fetchPayment = async () => {
     if (!orderCode) return;
@@ -26,6 +62,25 @@ export default function PaymentStatusPage() {
       setError(null);
       const data = await getPaymentByOrder(orderCode);
       setPayment(data);
+
+      // Nếu là PAYOS + PENDING
+      if (data.paymentMethod === 'PAYOS' && data.status === 'PENDING') {
+        // 1. Ưu tiên checkoutUrl từ response
+        if (data.checkoutUrl) {
+          setCheckoutUrl(data.checkoutUrl);
+        } else {
+          // 2. Thử lấy từ sessionStorage (được lưu lúc checkout)
+          const saved = sessionStorage.getItem(`payos_checkout_${orderCode}`);
+          if (saved) {
+            setCheckoutUrl(saved);
+          } else {
+            // 3. Cuối cùng mới gọi API tạo mới
+            await generatePayosLink(data);
+          }
+        }
+      } else if (data.checkoutUrl) {
+        setCheckoutUrl(data.checkoutUrl);
+      }
     } catch (err: any) {
       console.warn('Lỗi khi lấy thông tin giao dịch:', err);
       setError(err.message || 'Không thể lấy thông tin thanh toán.');
@@ -144,19 +199,35 @@ export default function PaymentStatusPage() {
                 <p className="text-slate-500 text-sm text-center mb-6 max-w-sm">
                   Bạn sẽ được chuyển hướng an toàn tới giao diện thanh toán PayOS để thanh toán qua Ngân hàng số hoặc QR Code.
                 </p>
-                {payment.checkoutUrl ? (
+                {payosLoading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-slate-500 text-sm">Đang tạo link thanh toán PayOS...</p>
+                  </div>
+                ) : checkoutUrl ? (
                   <a
-                    href={payment.checkoutUrl}
+                    href={checkoutUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="px-8 py-4 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 active:scale-95 shadow-md no-underline text-center cursor-pointer transition-all"
                   >
                     Thanh toán ngay bằng PayOS
                   </a>
+                ) : payosError ? (
+                  <div className="flex flex-col items-center gap-3 w-full">
+                    <p className="text-red-500 text-xs font-semibold text-center">{payosError}</p>
+                    <button
+                      onClick={() => generatePayosLink()}
+                      className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm border-none cursor-pointer active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" /> Thử lại
+                    </button>
+                  </div>
                 ) : (
-                  <p className="text-red-500 text-xs font-semibold">
-                    Không tìm thấy link thanh toán. Vui lòng liên hệ hỗ trợ hoặc thử lại.
-                  </p>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-slate-500 text-sm">Đang tải link thanh toán...</p>
+                  </div>
                 )}
               </div>
             )}
