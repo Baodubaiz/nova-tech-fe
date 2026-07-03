@@ -23,9 +23,9 @@ export interface ProductVariantRequest {
 }
 
 export const productService = {
-  async getProducts(page = 0, size = 12): Promise<PaginatedResponse<Product>> {
+  async getProducts(page = 0, size = 12, keyword?: string): Promise<PaginatedResponse<Product>> {
     const response = await apiClient.get<ApiResponse<PaginatedResponse<Product>>>(`/products`, {
-      params: { page, size }
+      params: { page, size, keyword }
     });
     if (response.data?.data) {
       return response.data.data;

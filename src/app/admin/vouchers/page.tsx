@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import voucherService from '@/services/voucher.service';
+import { useVoucher } from '@/hooks/useVoucher';
 import { Voucher, VoucherRequest } from '@/types/voucher';
 import { 
   Plus, 
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminVouchersPage() {
+  const { getActiveVouchers, createVoucher } = useVoucher();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function AdminVouchersPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await voucherService.getActiveVouchers();
+      const res = await getActiveVouchers();
       setVouchers(res || []);
     } catch (err: unknown) {
       console.error(err);
@@ -101,7 +102,7 @@ export default function AdminVouchersPage() {
         isActive: true
       };
 
-      await voucherService.createVoucher(payload);
+      await createVoucher(payload);
       setShowModal(false);
       fetchVouchers();
     } catch (err: unknown) {

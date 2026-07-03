@@ -1,33 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProductCard } from '@/components/product/ProductCard';
 import { useProduct } from '@/hooks/useProduct';
-import { useCategory } from '@/hooks/useCategory';
-import { Product, Category } from '@/types/product';
-import { Cpu, Smartphone, Laptop, Monitor, Headphones, HardDrive, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { Product } from '@/types/product';
+import { Search, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 
-const CATEGORY_META: Record<string, { name: string; icon: any; bannerColor: string }> = {
-  'dien-thoai': { name: 'Điện thoại', icon: Smartphone, bannerColor: 'from-blue-600 to-cyan-500' },
-  'laptop': { name: 'Laptop', icon: Laptop, bannerColor: 'from-indigo-600 to-purple-500' },
-  'pc-linh-kien': { name: 'PC - Linh kiện', icon: Cpu, bannerColor: 'from-blue-700 to-indigo-600' },
-  'man-hinh': { name: 'Màn hình', icon: Monitor, bannerColor: 'from-sky-600 to-blue-500' },
-  'phu-kien': { name: 'Phụ kiện', icon: Headphones, bannerColor: 'from-teal-600 to-cyan-500' },
-  'luu-tru': { name: 'Thiết bị lưu trữ', icon: HardDrive, bannerColor: 'from-slate-700 to-slate-500' },
-};
-
-export default function CategoryPage() {
+export default function SearchPage() {
   const { getProducts } = useProduct();
-  const { getCategories } = useCategory();
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const slug = params.slug as string;
+  const query = searchParams.get('q') || '';
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,66 +24,29 @@ export default function CategoryPage() {
   const [priceRange, setPriceRange] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
 
-  const meta = CATEGORY_META[slug] || { name: 'Danh mục sản phẩm', icon: Cpu, bannerColor: 'from-blue-600 to-indigo-600' };
-  const IconComponent = meta.icon;
-
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSearchResults = async () => {
       try {
         setLoading(true);
-        // Load categories to find the correct database category matching our slug
-        const catRes = await getCategories(0, 100);
-        const dbCategories = catRes.content || [];
-        setCategories(dbCategories);
-
-        // Try to find the category by slug or name matching
-        const matchingCategory = dbCategories.find(c => {
-          const catNameLower = c.name.toLowerCase();
-          const catSlugLower = (c.slug || '').toLowerCase();
-          
-          if (slug === 'dien-thoai') return catNameLower.includes('phone') || catNameLower.includes('thoại');
-          if (slug === 'laptop') return catNameLower.includes('laptop');
-          if (slug === 'pc-linh-kien') return catNameLower.includes('pc') || catNameLower.includes('linh kiện') || catNameLower.includes('cpu');
-          if (slug === 'man-hinh') return catNameLower.includes('monitor') || catNameLower.includes('màn hình');
-          if (slug === 'phu-kien') return catNameLower.includes('accessory') || catNameLower.includes('phụ kiện');
-          if (slug === 'luu-tru') return catNameLower.includes('storage') || catNameLower.includes('lưu trữ');
-          
-          return catSlugLower === slug.toLowerCase() || catNameLower.includes(slug.toLowerCase());
-        });
-
-        // Fetch products
-        const prodRes = await getProducts(0, 100);
-        const allProducts = prodRes.content || [];
-
-        if (matchingCategory) {
-          // Filter products by matching category ID
-          const filtered = allProducts.filter(p => p.category?.id === matchingCategory.id);
-          setProducts(filtered);
-        } else {
-          // Fallback fuzzy search by product or brand if category ID doesn't match perfectly
-          const filtered = allProducts.filter(p => {
-            const prodCatName = (p.category?.name || '').toLowerCase();
-            if (slug === 'dien-thoai') return prodCatName.includes('phone') || prodCatName.includes('thoại');
-            if (slug === 'laptop') return prodCatName.includes('laptop');
-            if (slug === 'pc-linh-kien') return prodCatName.includes('pc') || prodCatName.includes('linh kiện') || prodCatName.includes('cpu');
-            if (slug === 'man-hinh') return prodCatName.includes('monitor') || prodCatName.includes('màn hình');
-            if (slug === 'phu-kien') return prodCatName.includes('accessory') || prodCatName.includes('phụ kiện');
-            if (slug === 'luu-tru') return prodCatName.includes('storage') || prodCatName.includes('lưu trữ');
-            return false;
-          });
-          setProducts(filtered);
+        if (!query.trim()) {
+          setProducts([]);
+          setError(null);
+          return;
         }
+
+        const res = await getProducts(0, 100, query.trim());
+        setProducts(res.content || []);
         setError(null);
       } catch (err: any) {
-        console.error('Error fetching category page data:', err);
-        setError('Không thể kết nối danh sách sản phẩm.');
+        console.error('Error fetching search results:', err);
+        setError('Không thể lấy kết quả tìm kiếm.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [slug]);
+    fetchSearchResults();
+  }, [query]);
 
   // Extract unique brands for filtering
   const brands = Array.from(new Set(products.map(p => p.brand?.name).filter(Boolean))) as string[];
@@ -154,7 +105,7 @@ export default function CategoryPage() {
       <Header />
 
       {/* Banner Header */}
-      <div className={`w-full bg-gradient-to-r ${meta.bannerColor} py-10 text-white shadow-sm`}>
+      <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 py-10 text-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <button 
             onClick={() => router.push('/')}
@@ -165,11 +116,13 @@ export default function CategoryPage() {
           
           <div className="flex items-center gap-4">
             <div className="p-3 bg-white/10 rounded-xl">
-              <IconComponent className="w-8 h-8 text-white" />
+              <Search className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black">{meta.name}</h1>
-              <p className="text-sm text-white/80 mt-1">Khám phá các sản phẩm chất lượng cao với giá ưu đãi tốt nhất</p>
+              <h1 className="text-2xl sm:text-3xl font-black">
+                {query ? `Kết quả tìm kiếm cho "${query}"` : 'Tìm kiếm sản phẩm'}
+              </h1>
+              <p className="text-sm text-white/80 mt-1">Khám phá các sản phẩm phù hợp với nhu cầu của bạn</p>
             </div>
           </div>
         </div>
@@ -236,7 +189,7 @@ export default function CategoryPage() {
             {loading ? (
               <div className="w-full h-64 flex flex-col items-center justify-center gap-4">
                 <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm font-semibold text-slate-500">Đang tải sản phẩm...</span>
+                <span className="text-sm font-semibold text-slate-500">Đang tải kết quả...</span>
               </div>
             ) : error ? (
               <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl text-center">
@@ -251,16 +204,16 @@ export default function CategoryPage() {
             ) : filteredProducts.length === 0 ? (
               <div className="bg-white border border-slate-200 p-12 rounded-xl text-center shadow-sm flex flex-col items-center justify-center">
                 <div className="p-4 bg-slate-100 rounded-full mb-4">
-                  <IconComponent className="w-8 h-8 text-slate-400" />
+                  <Search className="w-8 h-8 text-slate-400" />
                 </div>
-                <h3 className="font-black text-slate-800 text-lg mb-2">Chưa có sản phẩm nào</h3>
-                <p className="text-sm text-slate-500 max-w-sm">Hiện chưa có sản phẩm nào thuộc danh mục này hiển thị trên cửa hàng.</p>
+                <h3 className="font-black text-slate-800 text-lg mb-2">Không tìm thấy kết quả</h3>
+                <p className="text-sm text-slate-500 max-w-sm">Rất tiếc, chúng tôi không tìm thấy sản phẩm nào phù hợp với từ khóa "{query}". Hãy thử lại bằng từ khóa khác nhé.</p>
               </div>
             ) : (
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <span className="text-sm font-semibold text-slate-500">
-                    Hiển thị <strong>{filteredProducts.length}</strong> sản phẩm
+                    Tìm thấy <strong>{filteredProducts.length}</strong> sản phẩm
                   </span>
                 </div>
 

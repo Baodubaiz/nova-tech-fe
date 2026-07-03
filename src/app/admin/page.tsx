@@ -2,10 +2,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import productService from '@/services/product.service';
-import categoryService from '@/services/category.service';
-import brandService from '@/services/brand.service';
-import userService from '@/services/user.service';
+import { useProduct } from '@/hooks/useProduct';
+import { useCategory } from '@/hooks/useCategory';
+import { useBrand } from '@/hooks/useBrand';
+import { useUser } from '@/hooks/useUser';
 import { AuthUser } from '@/types/auth';
 import { Product } from '@/types/product';
 import { 
@@ -22,6 +22,11 @@ import {
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
+  const { getProducts } = useProduct();
+  const { getCategories } = useCategory();
+  const { getBrands } = useBrand();
+  const { getAllUsers } = useUser();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,10 +49,10 @@ export default function AdminDashboardPage() {
 
         // Run fetches concurrently
         const [productsRes, categoriesRes, brandsRes, usersRes] = await Promise.all([
-          productService.getProducts(0, 5),
-          categoryService.getCategories(0, 1),
-          brandService.getBrands(0, 1),
-          userService.getAllUsers(0, 5)
+          getProducts(0, 5),
+          getCategories(0, 1),
+          getBrands(0, 1),
+          getAllUsers(0, 5)
         ]);
 
         setStats({

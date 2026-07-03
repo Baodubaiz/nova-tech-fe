@@ -2,9 +2,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import productService, { ProductRequest, ProductVariantRequest } from '@/services/product.service';
-import categoryService from '@/services/category.service';
-import brandService from '@/services/brand.service';
+import { useProduct } from '@/hooks/useProduct';
+import { ProductRequest, ProductVariantRequest } from '@/services/product.service';
+import { useCategory } from '@/hooks/useCategory';
+import { useBrand } from '@/hooks/useBrand';
 import { Product, ProductVariant, Category, Brand } from '@/types/product';
 import { 
   Plus, 
@@ -21,6 +22,19 @@ import {
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
+  const { 
+    getProducts, 
+    createProduct, 
+    updateProduct, 
+    deleteProduct, 
+    getVariantsByProduct, 
+    createVariant, 
+    updateVariant, 
+    deleteVariant 
+  } = useProduct();
+  const { getCategories } = useCategory();
+  const { getBrands } = useBrand();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -69,7 +83,7 @@ export default function AdminProductsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await productService.getProducts(pageNumber, 10);
+      const res = await getProducts(pageNumber, 10);
       setProducts(res.content || []);
       setPage(res.number);
       setTotalPages(res.totalPages);
@@ -85,8 +99,8 @@ export default function AdminProductsPage() {
   const fetchDropdownData = async () => {
     try {
       const [catRes, brandRes] = await Promise.all([
-        categoryService.getCategories(0, 100),
-        brandService.getBrands(0, 100)
+        getCategories(0, 100),
+        getBrands(0, 100)
       ]);
       setCategories(catRes.content || []);
       setBrands(brandRes.content || []);
@@ -111,7 +125,7 @@ export default function AdminProductsPage() {
     setVariants([]);
     setLoadingVariants(true);
     try {
-      const res = await productService.getVariantsByProduct(productId, 0, 50);
+      const res = await getVariantsByProduct(productId, 0, 50);
       setVariants(res.content || []);
     } catch (err: unknown) {
       console.error(err);
@@ -171,9 +185,9 @@ export default function AdminProductsPage() {
       };
 
       if (editingProduct) {
-        await productService.updateProduct(editingProduct.id, payload);
+        await updateProduct(editingProduct.id, payload);
       } else {
-        await productService.createProduct(payload);
+        await createProduct(payload);
       }
       setShowProductModal(false);
       fetchProducts(editingProduct ? page : 0);
@@ -187,7 +201,7 @@ export default function AdminProductsPage() {
   const handleDeleteProduct = async () => {
     if (!deletingProduct) return;
     try {
-      await productService.deleteProduct(deletingProduct.id);
+      await deleteProduct(deletingProduct.id);
       setDeletingProduct(null);
       setExpandedProdId(null);
       fetchProducts(0);
@@ -238,14 +252,14 @@ export default function AdminProductsPage() {
       };
 
       if (editingVariant) {
-        await productService.updateVariant(editingVariant.id, payload);
+        await updateVariant(editingVariant.id, payload);
       } else {
-        await productService.createVariant(expandedProdId, payload);
+        await createVariant(expandedProdId, payload);
       }
       setShowVariantModal(false);
       
       // Reload variants
-      const vRes = await productService.getVariantsByProduct(expandedProdId, 0, 50);
+      const vRes = await getVariantsByProduct(expandedProdId, 0, 50);
       setVariants(vRes.content || []);
     } catch (err: unknown) {
       alert((err as Error).message || 'Lỗi khi lưu phiên bản.');
@@ -257,10 +271,10 @@ export default function AdminProductsPage() {
   const handleDeleteVariant = async () => {
     if (!deletingVariant || !expandedProdId) return;
     try {
-      await productService.deleteVariant(deletingVariant.id);
+      await deleteVariant(deletingVariant.id);
       setDeletingVariant(null);
       // Reload variants
-      const vRes = await productService.getVariantsByProduct(expandedProdId, 0, 50);
+      const vRes = await getVariantsByProduct(expandedProdId, 0, 50);
       setVariants(vRes.content || []);
     } catch (err: unknown) {
       alert((err as Error).message || 'Lỗi khi xóa phiên bản.');

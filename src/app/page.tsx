@@ -8,14 +8,16 @@ import { FeaturedCategories } from '@/components/home/FeaturedCategories';
 import { FeaturedProducts } from '@/components/home/FeaturedProducts';
 import { WhyChooseUs } from '@/components/home/WhyChooseUs';
 
-import { productService } from '@/services/product.service';
-import { categoryService } from '@/services/category.service';
+import { useProduct } from '@/hooks/useProduct';
+import { useCategory } from '@/hooks/useCategory';
 import { Product, Category } from '@/types/product';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
+  const { getProducts } = useProduct();
+  const { getCategories } = useCategory();
   const router = useRouter();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -52,7 +54,7 @@ export default function HomePage() {
     const fetchCategories = async () => {
       try {
         setCategoriesLoading(true);
-        const data = await categoryService.getCategories(0, 20);
+        const data = await getCategories(0, 20);
         // data.content holds the categories page content
         setCategories(data.content || []);
         setCategoriesError(null);
@@ -68,7 +70,7 @@ export default function HomePage() {
     const fetchProducts = async () => {
       try {
         setProductsLoading(true);
-        const data = await productService.getProducts(0, 12);
+        const data = await getProducts(0, 12);
         const list = data.content || [];
         setProducts(list);
         
