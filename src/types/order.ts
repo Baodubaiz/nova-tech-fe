@@ -75,3 +75,52 @@ export interface CreateOrderRequest {
     country?: string;
     paymentMethod: PaymentMethod;
 }
+
+export interface CheckoutRequest {
+  voucherCode?: string;
+  receiverName: string;
+  phone: string;
+  addressLine: string;
+  ward?: string;
+  district?: string;
+  city: string;
+  paymentMethod: PaymentMethod;
+}
+
+export interface OrderItemResponse {
+  id: string;
+  productVariantId: string;
+  variantName: string;
+  priceAtPurchase: number;
+  quantity: number;
+}
+
+export interface OrderResponse extends Order {
+  items?: OrderItemResponse[];
+}
+
+export interface PaymentRequest {
+  orderCode: string;
+  amount: number;
+  description?: string;
+  paymentMethod: PaymentMethod;
+}
+
+export interface PaymentResponse {
+  id: string;
+  paymentCode: string;
+  orderCode: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentMethod: PaymentMethod;
+  checkoutUrl?: string;
+  qrCode?: string;
+  description?: string;
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  paidAt?: string;
+  expiredAt?: string;
+  createdAt?: string;
+}

@@ -1,18 +1,44 @@
 import { useState } from 'react';
 import { orderService } from '@/services/order.service';
-import { Order, CreateOrderRequest, OrderStatus } from '@/types/order';
+import { CheckoutRequest, OrderResponse, OrderStatus } from '@/types/order';
 
 export const useOrder = () => {
-    // --- STATES DÙNG CHUNG ---
-    const [orders, setOrders] = useState<Order[]>([]); // Chứa danh sách đơn hàng (cho cả client lịch sử hoặc admin danh sách)
-    const [currentOrder, setCurrentOrder] = useState<Order | null>(null); // Chi tiết 1 đơn hàng đang xem
-    const [totalElements, setTotalElements] = useState<number>(0); // Tổng số lượng đơn để làm phân trang
+    const [orders, setOrders] = useState<OrderResponse[]>([]);
+    const [currentOrder, setCurrentOrder] = useState<OrderResponse | null>(null);
+    const [totalElements, setTotalElements] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // --- API DÙNG CHUNG (CẢ CLIENT & ADMIN) ---
+    const checkout = async (checkoutData: CheckoutRequest, userId: string): Promise<OrderResponse> => {
+        setLoading(true);
+        setError(null);
+        try {
+            return await orderService.checkout(checkoutData, userId);
+        } catch (err: any) {
+            const errMsg = err.response?.data?.message || err.message || 'Lỗi đặt hàng';
+            setError(errMsg);
+            throw new Error(errMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    // 1. Xem chi tiết một đơn hàng cụ thể
+    const getMyOrders = async (userId: string): Promise<OrderResponse[]> => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await orderService.getMyOrders(userId);
+            setOrders(data);
+            return data;
+        } catch (err: any) {
+            const errMsg = err.response?.data?.message || err.message || 'Lỗi lấy danh sách đơn hàng';
+            setError(errMsg);
+            throw new Error(errMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchOrderDetail = async (orderId: string) => {
         setLoading(true);
         setError(null);
@@ -27,15 +53,11 @@ export const useOrder = () => {
         }
     };
 
-    // 2. Hủy đơn hàng (User tự hủy hoặc Admin hủy hộ)
     const handleCancelOrder = async (orderId: string, reason?: string) => {
         setLoading(true);
         setError(null);
         try {
-            const updatedOrder = await orderService.cancelOrder(orderId, reason);
-            // Cập nhật lại list local để giao diện đổi trạng thái ngay lập tức
-            setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
-            if (currentOrder?.id === orderId) setCurrentOrder(updatedOrder);
+            const updatedOrder = await orderService.updateOrderStatus(orderId, OrderStatus.CANCELLED, reason);
             return updatedOrder;
         } catch (err: any) {
             setError(err.message || 'Hủy đơn hàng thất bại');
@@ -45,17 +67,13 @@ export const useOrder = () => {
         }
     };
 
-
-    // --- API DÀNH RIÊNG CHO CLIENT (USER) ---
-
-    // 3. Khách xem lịch sử đơn hàng của chính mình
-    const fetchMyOrders = async (page = 0, size = 10) => {
+    const fetchMyOrders = async (userId: string) => {
         setLoading(true);
         setError(null);
         try {
-            const data = await orderService.getMyOrders(page, size);
-            setOrders(data.content);
-            setTotalElements(data.totalElements);
+            const data = await orderService.getMyOrders(userId);
+            setOrders(data);
+            setTotalElements(data.length);
         } catch (err: any) {
             setError(err.message || 'Không thể tải danh sách lịch sử đơn hàng');
         } finally {
@@ -63,40 +81,7 @@ export const useOrder = () => {
         }
     };
 
-    // 4. Khách tiến hành đặt hàng (Checkout)
-    const handleCheckout = async (orderData: CreateOrderRequest) => {
-        setLoading(true);
-        setError(null);
-        try {
-            return await orderService.checkout(orderData);
-        } catch (err: any) {
-            setError(err.message || 'Đặt hàng thất bại');
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // 5. Cập nhật trạng thái đơn hàng (Cơ bản/User)
-    const handleUpdateStatus = async (orderId: string, status: OrderStatus, note?: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const updatedOrder = await orderService.updateOrderStatus(orderId, status, note);
-            setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
-            if (currentOrder?.id === orderId) setCurrentOrder(updatedOrder);
-            return updatedOrder;
-        } catch (err: any) {
-            setError(err.message || 'Cập nhật trạng thái thất bại');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
     // --- API DÀNH RIÊNG CHO ADMIN ---
-
-    // 6. Admin quản lý xem toàn bộ đơn hàng hệ thống (Có bộ lọc trạng thái)
     const fetchAllOrdersForAdmin = async (page = 0, size = 10, status?: OrderStatus) => {
         setLoading(true);
         setError(null);
@@ -111,7 +96,6 @@ export const useOrder = () => {
         }
     };
 
-    // 7. Admin cập nhật trạng thái nâng cao
     const handleAdminUpdateStatus = async (orderId: string, status: OrderStatus, note?: string) => {
         setLoading(true);
         setError(null);
@@ -128,7 +112,6 @@ export const useOrder = () => {
         }
     };
 
-    // 8. Admin phê duyệt/xác nhận tiền chuyển khoản ngân hàng
     const handleConfirmBankTransfer = async (orderId: string, note?: string) => {
         setLoading(true);
         setError(null);
@@ -145,18 +128,18 @@ export const useOrder = () => {
         }
     };
 
-    // Trả về toàn bộ "vũ khí" để các màn hình thích xài hàm nào thì lôi hàm đó ra
     return {
         orders,
         currentOrder,
         totalElements,
         loading,
+        isLoading: loading,
         error,
+        checkout,
+        getMyOrders,
         fetchOrderDetail,
         handleCancelOrder,
         fetchMyOrders,
-        handleCheckout,
-        handleUpdateStatus,
         fetchAllOrdersForAdmin,
         handleAdminUpdateStatus,
         handleConfirmBankTransfer

@@ -12,6 +12,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 15000,
+  withCredentials: true,
 });
 
 // Interceptor đính kèm AccessToken vào mỗi request gửi đi
@@ -54,7 +55,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as CustomAxiosRequestConfig;
     const status = error.response?.status;
 
-    // 🔥 SỬA TẠI ĐÂY: Hứng cả 401 (Unauthorized) lẫn 403 (Forbidden) do hết hạn Token
+    // Hứng cả 401 (Unauthorized) lẫn 403 (Forbidden) do hết hạn Token
     if ((status === 401 || status === 403) && originalRequest && !originalRequest._retry) {
 
       // Kịch bản: Đang có một request khác tiến hành Refresh Token ngầm rồi
@@ -79,65 +80,62 @@ apiClient.interceptors.response.use(
 
       const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('novatech_refresh_token') : null;
 
-      if (refreshToken) {
-        try {
-          // Gọi API trực tiếp bằng thực thể axios gốc để không bị dính vào bộ lọc apiClient này
-          const response = await axios.post(`${env.apiBaseUrl}/auth/refresh`, { refreshToken });
+      try {
+        // Sử dụng direct axios post có withCredentials: true để trình duyệt truyền HttpOnly Cookie refresh_token
+        const response = await axios.post(
+          `${env.apiBaseUrl}/auth/refresh`,
+          { refreshToken: refreshToken || "" },
+          { withCredentials: true }
+        );
 
-          // Hỗ trợ bọc lót cả 2 trường hợp: data lồng trong data hoặc trả về trực tiếp ở root
-          const responseData = response.data?.data || response.data;
+        // Hỗ trợ bọc lót cả 2 trường hợp: data lồng trong data hoặc trả về trực tiếp ở root
+        const responseData = response.data?.data || response.data;
 
-          if (responseData && responseData.accessToken) {
-            const newAccessToken = responseData.accessToken;
-            const newRefreshToken = responseData.refreshToken || refreshToken;
+        if (responseData && responseData.accessToken) {
+          const newAccessToken = responseData.accessToken;
+          const newRefreshToken = responseData.refreshToken || refreshToken;
 
-            const store = useAuthStore.getState();
-            const user = responseData.user || store.user;
+          const store = useAuthStore.getState();
+          const user = responseData.user || store.user;
 
-            // 1. Cập nhật dữ liệu mới vào Zustand Store
-            if (user) {
-              store.setAuth(user, newAccessToken, newRefreshToken);
-            }
+          // 1. Cập nhật dữ liệu mới vào Zustand Store
+          if (user) {
+            store.setAuth(user, newAccessToken, newRefreshToken);
+          }
 
-            // 2. Đồng bộ trực tiếp xuống LocalStorage để Interceptor Request đọc được ngay lập tức
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('novatech_access_token', newAccessToken);
+          // 2. Đồng bộ trực tiếp xuống LocalStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('novatech_access_token', newAccessToken);
+            if (newRefreshToken) {
               localStorage.setItem('novatech_refresh_token', newRefreshToken);
             }
-
-            // Giải phóng hàng đợi, cấp token mới cho các request đang xếp hàng chờ
-            processQueue(null, newAccessToken);
-            isRefreshing = false;
-
-            // Tiến hành tái kích hoạt lại chính request ban đầu đã gây lỗi
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            }
-            return apiClient(originalRequest);
-          } else {
-            throw new Error('Cấu trúc dữ liệu phản hồi không hợp lệ');
           }
-        } catch (refreshError) {
-          // Kịch bản tồi tệ: Refresh Token cũng hết hạn hoặc bị Revoke nốt dưới Backend
-          processQueue(refreshError, null);
+
+          // Giải phóng hàng đợi, cấp token mới cho các request đang xếp hàng chờ
+          processQueue(null, newAccessToken);
           isRefreshing = false;
 
-          // Xóa sạch trạng thái đăng nhập, càn quét toàn bộ bộ nhớ máy
-          useAuthStore.getState().clearAuth();
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('novatech_access_token');
-            localStorage.removeItem('novatech_refresh_token');
-            window.location.href = '/login?message=session_expired';
+          // Tiến hành tái kích hoạt lại chính request ban đầu đã gây lỗi
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           }
-          return Promise.reject(refreshError);
+          return apiClient(originalRequest);
+        } else {
+          throw new Error('Cấu trúc dữ liệu phản hồi không hợp lệ');
         }
-      } else {
-        // Không tìm thấy Refresh Token nào trong máy -> Ép buộc ra trang Login luôn
+      } catch (refreshError) {
+        // Kịch bản tồi tệ: Refresh Token cũng hết hạn hoặc bị Revoke nốt dưới Backend
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
+        // Xóa sạch trạng thái đăng nhập
         useAuthStore.getState().clearAuth();
         if (typeof window !== 'undefined') {
           localStorage.removeItem('novatech_access_token');
-          window.location.href = '/login';
+          localStorage.removeItem('novatech_refresh_token');
+          window.location.href = '/login?message=session_expired';
         }
+        return Promise.reject(refreshError);
       }
     }
 
