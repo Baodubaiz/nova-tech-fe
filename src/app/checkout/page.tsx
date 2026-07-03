@@ -135,6 +135,11 @@ export default function CheckoutPage() {
 
       const orderResponse = await checkout(checkoutData, user.id);
       
+      // Nếu backend trả về checkoutUrl (PayOS link), lưu lại để dùng trên trang payment
+      if (orderResponse.checkoutUrl) {
+        sessionStorage.setItem(`payos_checkout_${orderResponse.orderCode}`, orderResponse.checkoutUrl);
+      }
+      
       // Redirect to payment details page
       router.push(`/payment/${orderResponse.orderCode}`);
     } catch (err: any) {
@@ -277,7 +282,7 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-1 gap-4">
                 
                 {/* PayOS Option */}
-                <label className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === PaymentMethod.PAYOS ? 'border-primary bg-blue-50/20' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                <label className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === PaymentMethod.PAYOS ? 'border-primary bg-blue-50/20' : 'border-slate-100 bg-white hover:border-slate-200'}`} title="Chọn PayOS để thanh toán nhanh qua QR Code, ATM hoặc thẻ nội địa. Khi xác nhận sẽ chuyển hướng tới cổng PayOS.">
                   <div className="flex items-center gap-3">
                     <input
                       type="radio"
