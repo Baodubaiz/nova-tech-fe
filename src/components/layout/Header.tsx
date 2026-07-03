@@ -5,9 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { routes } from '@/config/routes.config';
-import { ShoppingCart, Search, Menu, X, LogIn, LogOut, User, Smartphone, Laptop, Monitor, Headphones, HardDrive, Cpu } from 'lucide-react';
-import cartService from '@/services/cart.service';
+import { ShoppingCart, Search, Menu, X, LogIn, LogOut, User, Smartphone, Laptop, Monitor, Headphones, HardDrive, Cpu, Loader2 } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
 import { Cart } from '@/types/cart';
+import { useRouter } from 'next/navigation';
+import { useDebounce } from '@/hooks/useDebounce';
+import { productService } from '@/services/product.service';
+import { Product } from '@/types/product';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -24,16 +28,23 @@ const CATEGORIES = [
 ];
 
 export const Header: React.FC<HeaderProps> = ({ onSearch, cartTrigger = 0 }) => {
+  const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
+  const { getCart } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cart, setCart] = useState<Cart | null>(null);
   const [logoError, setLogoError] = useState(false);
 
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const data = await cartService.getCart(user?.id);
+        const data = await getCart(user?.id);
         setCart(data);
       } catch (err) {
         console.warn('Lỗi khi lấy giỏ hàng:', err);
@@ -42,10 +53,34 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, cartTrigger = 0 }) => 
     fetchCart();
   }, [user, cartTrigger]);
 
+  useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (debouncedSearchQuery.trim().length === 0) {
+        setSearchResults([]);
+        setShowDropdown(false);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const response = await productService.getProducts(0, 5, debouncedSearchQuery);
+        setSearchResults(response.content || []);
+        setShowDropdown(true);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+    fetchSearchResults();
+  }, [debouncedSearchQuery]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch) {
       onSearch(searchQuery);
+    } else if (searchQuery.trim().length > 0) {
+      setShowDropdown(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -81,18 +116,65 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, cartTrigger = 0 }) => 
           </Link>
 
           {/* Search Bar - Center */}
-          <form onSubmit={handleSearchSubmit} className="hidden md:flex relative flex-1 max-w-2xl mx-4">
-            <input
-              type="text"
-              placeholder="Nhập tên điện thoại, máy tính, phụ kiện... cần tìm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 px-4 pr-10 rounded-lg bg-white border-none text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-inner"
-            />
-            <button type="submit" className="absolute right-0 top-0 h-10 w-12 flex items-center justify-center bg-slate-100 rounded-r-lg text-slate-600 hover:bg-slate-200 transition-colors">
-              <Search className="w-5 h-5" />
-            </button>
-          </form>
+          <div className="hidden md:flex relative flex-1 max-w-2xl mx-4 group">
+            <form onSubmit={handleSearchSubmit} className="relative w-full flex">
+              <input
+                type="text"
+                placeholder="Nhập tên điện thoại, máy tính, phụ kiện... cần tìm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => { if (searchQuery.trim().length > 0) setShowDropdown(true); }}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                className="w-full h-10 px-4 pr-10 rounded-lg bg-white border-none text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-inner"
+              />
+              <button type="submit" className="absolute right-0 top-0 h-10 w-12 flex items-center justify-center bg-slate-100 rounded-r-lg text-slate-600 hover:bg-slate-200 transition-colors">
+                {isSearching ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" /> : <Search className="w-5 h-5" />}
+              </button>
+            </form>
+
+            {/* Dropdown Results */}
+            {showDropdown && (
+              <div className="absolute top-12 left-0 w-full bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-[60]">
+                {searchResults.length > 0 ? (
+                  <div className="flex flex-col">
+                    {searchResults.map((product) => (
+                      <Link 
+                        key={product.id} 
+                        href={`/product/${product.slug || product.id}`}
+                        className="flex items-center gap-3 p-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 no-underline transition-colors"
+                        onClick={() => setShowDropdown(false)}
+                      >
+                        <div className="w-10 h-10 bg-slate-100 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                          {product.images?.[0] ? (
+                            <Image src={product.images[0].url} alt={product.name} width={40} height={40} className="object-cover" />
+                          ) : (
+                            <span className="text-xs text-slate-400">No img</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{product.name}</p>
+                          <p className="text-xs text-slate-500">{product.variants?.[0]?.price?.toLocaleString('vi-VN')}đ</p>
+                        </div>
+                      </Link>
+                    ))}
+                    <button 
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                      }}
+                      className="w-full p-3 text-sm font-bold text-blue-600 hover:bg-blue-50 bg-white border-none cursor-pointer transition-colors"
+                    >
+                      Xem tất cả kết quả cho "{searchQuery}"
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-sm text-slate-500 font-medium">
+                    Không tìm thấy sản phẩm nào phù hợp.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Actions - Right */}
           <div className="hidden md:flex items-center gap-6 shrink-0">

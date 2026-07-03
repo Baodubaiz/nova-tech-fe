@@ -2,7 +2,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import brandService, { BrandRequest } from '@/services/brand.service';
+import { useBrand } from '@/hooks/useBrand';
+import { BrandRequest } from '@/services/brand.service';
 import { Brand } from '@/types/product';
 import { 
   Plus, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminBrandsPage() {
+  const { getBrands, createBrand, updateBrand, deleteBrand } = useBrand();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export default function AdminBrandsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await brandService.getBrands(pageNumber, 10);
+      const res = await getBrands(pageNumber, 10);
       setBrands(res.content || []);
       setPage(res.number);
       setTotalPages(res.totalPages);
@@ -79,9 +81,9 @@ export default function AdminBrandsPage() {
         logoUrl: logoUrl.trim() || undefined 
       };
       if (editingBrand) {
-        await brandService.updateBrand(editingBrand.id, payload);
+        await updateBrand(editingBrand.id, payload);
       } else {
-        await brandService.createBrand(payload);
+        await createBrand(payload);
       }
       setShowModal(false);
       fetchBrands(editingBrand ? page : 0);
@@ -95,7 +97,7 @@ export default function AdminBrandsPage() {
   const handleDelete = async () => {
     if (!deletingBrand) return;
     try {
-      await brandService.deleteBrand(deletingBrand.id);
+      await deleteBrand(deletingBrand.id);
       setDeletingBrand(null);
       fetchBrands(0);
     } catch (err: unknown) {

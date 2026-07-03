@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import userService from '@/services/user.service';
+import { useUser } from '@/hooks/useUser';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthUser } from '@/types/auth';
 import { 
@@ -16,6 +16,7 @@ import {
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth();
+  const { getAllUsers, deleteUser } = useUser();
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export default function AdminUsersPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await userService.getAllUsers(pageNumber, 10);
+      const res = await getAllUsers(pageNumber, 10);
       setUsers(res.content || []);
       setPage(res.number);
       setTotalPages(res.totalPages);
@@ -58,7 +59,7 @@ export default function AdminUsersPage() {
     }
 
     try {
-      await userService.deleteUser(deletingUser.id);
+      await deleteUser(deletingUser.id);
       setDeletingUser(null);
       fetchUsers(0);
     } catch (err: unknown) {

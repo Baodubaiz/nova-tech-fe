@@ -4,7 +4,7 @@ import React from 'react';
 import { Product } from '@/types/product';
 import { env } from '@/config';
 import { useAuth } from '@/hooks/useAuth';
-import cartService from '@/services/cart.service';
+import { useCart } from '@/hooks/useCart';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +13,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
   const { user } = useAuth();
+  const { addToCart } = useCart();
   
   // Lấy variant đầu tiên làm variant mặc định để hiển thị
   const defaultVariant = product.variants && product.variants.length > 0 
@@ -43,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
     if (!defaultVariant) return;
 
     try {
-      await cartService.addToCart(defaultVariant.id, 1, user?.id);
+      await addToCart(defaultVariant.id, 1, user?.id);
       if (onAddToCart) {
         onAddToCart();
       } else {
