@@ -93,25 +93,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, cartTrigger = 0 }) => 
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group no-underline shrink-0">
-            {logoError ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-primary font-black text-xl shadow-sm transition-transform group-hover:rotate-12">
-                N
-              </div>
-            ) : (
-              <div className="relative w-10 h-10 overflow-hidden rounded shadow-sm bg-white p-0.5">
-                <Image
-                  src="/logo.png"
-                  alt="NovaTech Logo"
-                  width={40}
-                  height={40}
-                  className="object-contain w-full h-full"
-                  onError={() => setLogoError(true)}
-                />
-              </div>
-            )}
-            <span className="text-xl md:text-2xl font-black tracking-tight text-white hidden sm:block uppercase">
-              NOVATECH
+          <Link href="/" className="flex items-center gap-2.5 group no-underline shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white font-black text-xl shadow-md transition-all group-hover:scale-105">
+              N
+            </div>
+            <span className="text-lg md:text-xl font-black tracking-tight text-white uppercase">
+              NOVA<span className="text-cyan-400">TECH</span>
             </span>
           </Link>
 

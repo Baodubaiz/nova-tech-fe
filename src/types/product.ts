@@ -56,6 +56,7 @@ export interface Product {
   brand?: Brand;
   category?: Category;
   variants: ProductVariant[];
+  images?: ProductImage[];
   isActive: boolean;
   slug: string;
   createdAt?: string;

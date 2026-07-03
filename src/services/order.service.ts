@@ -1,52 +1,43 @@
 import apiClient from './api-client';
-import { Order, CreateOrderRequest, OrderStatus } from '../types/order';
+import { CheckoutRequest, OrderResponse, OrderStatus } from '@/types/order';
 
 export const orderService = {
-  /**
-   * GET /api/v1/orders
-   * Lấy danh sách tất cả đơn hàng (Thường dùng cho Admin)
-   */
-  async getAllOrders(page = 0, size = 10, status?: OrderStatus): Promise<{ content: Order[]; totalElements: number }> {
+  // Lấy tất cả đơn hàng (Admin)
+  async getAllOrders(page = 0, size = 10, status?: OrderStatus): Promise<{ content: OrderResponse[]; totalElements: number }> {
     const response = await apiClient.get('/orders', {
       params: { page, size, status }
     });
     return response.data;
   },
 
-  /**
-   * GET /api/v1/orders/{orderId}
-   * Xem chi tiết một đơn hàng theo ID
-   */
-  async getOrderById(orderId: string): Promise<Order> {
+  // Xem chi tiết đơn hàng
+  async getOrderById(orderId: string): Promise<OrderResponse> {
     const response = await apiClient.get(`/orders/${orderId}`);
     return response.data;
   },
 
-  /**
-   * GET /api/v1/orders/my-orders
-   * Lấy danh sách đơn hàng của chính User đang đăng nhập (Trang lịch sử mua hàng)
-   */
-  async getMyOrders(page = 0, size = 10): Promise<{ content: Order[]; totalElements: number }> {
-    const response = await apiClient.get('/orders/my-orders', {
-      params: { page, size }
+  // Đặt hàng / Checkout
+  async checkout(checkoutData: CheckoutRequest, userId: string): Promise<OrderResponse> {
+    const response = await apiClient.post<OrderResponse>('/orders/checkout', checkoutData, {
+      headers: {
+        'User-Id': userId
+      }
     });
     return response.data;
   },
 
-  /**
-   * POST /api/v1/orders/checkout
-   * Tạo đơn hàng mới (Thanh toán/Đặt hàng)
-   */
-  async checkout(data: CreateOrderRequest): Promise<Order> {
-    const response = await apiClient.post('/orders/checkout', data);
+  // Lấy đơn hàng của cá nhân
+  async getMyOrders(userId: string): Promise<OrderResponse[]> {
+    const response = await apiClient.get<OrderResponse[]>('/orders/my-orders', {
+      headers: {
+        'User-Id': userId
+      }
+    });
     return response.data;
   },
 
-  /**
-   * PUT /api/v1/orders/{orderId}/status
-   * Cập nhật trạng thái đơn hàng (Dành cho User cập nhật hoặc quy trình tự động cơ bản)
-   */
-  async updateOrderStatus(orderId: string, status: OrderStatus, note?: string): Promise<Order> {
+  // Cập nhật trạng thái (Admin / System)
+  async updateOrderStatus(orderId: string, status: OrderStatus, note?: string): Promise<unknown> {
     const response = await apiClient.put(`/orders/${orderId}/status`, null, {
       params: {
         status,
@@ -56,11 +47,21 @@ export const orderService = {
     return response.data;
   },
 
-  /**
-   * PUT /api/v1/orders/{orderId}/admin/status
-   * Quyền Admin cập nhật trạng thái đơn hàng nâng cao
-   */
-  async adminUpdateOrderStatus(orderId: string, status: OrderStatus, note?: string): Promise<Order> {
+  // Hủy đơn hàng (User)
+  async cancelOrder(orderId: string, userId: string, note?: string): Promise<OrderResponse> {
+    const response = await apiClient.put<OrderResponse>(`/orders/${orderId}/cancel`, null, {
+      headers: {
+        'User-Id': userId
+      },
+      params: {
+        note: note || 'Khách hàng chủ động hủy đơn hàng.'
+      }
+    });
+    return response.data;
+  },
+
+  // Admin cập nhật trạng thái
+  async adminUpdateOrderStatus(orderId: string, status: OrderStatus, note?: string): Promise<OrderResponse> {
     const response = await apiClient.put(`/orders/${orderId}/admin/status`, null, {
       params: {
         status,
@@ -70,27 +71,13 @@ export const orderService = {
     return response.data;
   },
 
-  /**
-   * PUT /api/v1/orders/{orderId}/confirm-bank-transfer
-   * Xác nhận đã nhận được tiền chuyển khoản ngân hàng (Dành cho admin duyệt đơn chuyển khoản)
-   */
-  async confirmBankTransfer(orderId: string, note?: string): Promise<Order> {
+  // Xác nhận chuyển khoản ngân hàng
+  async confirmBankTransfer(orderId: string, note?: string): Promise<OrderResponse> {
     const response = await apiClient.put(`/orders/${orderId}/confirm-bank-transfer`, null, {
       params: { note }
     });
     return response.data;
-  },
-
-  /**
-   * PUT /api/v1/orders/{orderId}/cancel
-   * Hủy đơn hàng
-   */
-  async cancelOrder(orderId: string, reason?: string): Promise<Order> {
-    const response = await apiClient.put(`/orders/${orderId}/cancel`, null, {
-      params: {
-        reason: reason || 'Người dùng yêu cầu hủy đơn hàng'
-      }
-    });
-    return response.data;
   }
 };
+
+export default orderService;

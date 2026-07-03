@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -9,7 +9,7 @@ import { useProduct } from '@/hooks/useProduct';
 import { Product } from '@/types/product';
 import { Search, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 
-export default function SearchPage() {
+function SearchContent() {
   const { getProducts } = useProduct();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -231,5 +231,17 @@ export default function SearchPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-slate-50 justify-center items-center">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

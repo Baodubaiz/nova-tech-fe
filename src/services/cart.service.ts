@@ -59,7 +59,8 @@ export const cartService = {
     try {
       const response = await apiClient.get<Cart>('/carts/my-cart', { headers });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Lỗi chi tiết từ getCart server:', error.response?.data || error.message);
       console.warn('Lỗi khi lấy giỏ hàng từ server, chuyển sang guest cart:', error);
       return {
         id: 'guest',
@@ -90,13 +91,18 @@ export const cartService = {
       return { id: 'guest', userId: 'guest', items };
     }
 
-    const response = await apiClient.post<Cart>('/carts/items', { productVariantId, quantity }, { headers });
-    return response.data;
+    try {
+      const response = await apiClient.post<Cart>('/carts/items', { productVariantId, quantity }, { headers });
+      return response.data;
+    } catch (error: any) {
+      console.error('Lỗi chi tiết từ addToCart server:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   async updateCartItem(itemId: string, productVariantId: string, quantity: number, userId?: string): Promise<Cart> {
     const headers = this.getHeaders(userId);
-    if (!headers['User-Id']) {
+    if (!headers['User-Id'] || itemId === productVariantId) {
       // Guest
       const items = getGuestCartItems();
       const existing = items.find(item => item.productVariantId === productVariantId);
@@ -113,7 +119,7 @@ export const cartService = {
 
   async removeFromCart(itemId: string, productVariantId: string, userId?: string): Promise<Cart> {
     const headers = this.getHeaders(userId);
-    if (!headers['User-Id']) {
+    if (!headers['User-Id'] || itemId === productVariantId) {
       // Guest
       let items = getGuestCartItems();
       items = items.filter(item => item.productVariantId !== productVariantId);

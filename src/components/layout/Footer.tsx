@@ -1,4 +1,7 @@
-import { Mail, Phone, MapPin } from 'lucide-react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Mail, Phone, MapPin, ArrowUp } from 'lucide-react';
 
 // Custom inline SVG icons to prevent lucide-react version compatibility issues
 const FacebookIcon = () => (
@@ -20,8 +23,27 @@ const GithubIcon = () => (
 );
 
 export const Footer: React.FC = () => {
+  const [showScroll, setShowScroll] = useState(false);
+
+  useEffect(() => {
+    const checkScrollTop = () => {
+      if (!showScroll && window.pageYOffset > 400) {
+        setShowScroll(true);
+      } else if (showScroll && window.pageYOffset <= 400) {
+        setShowScroll(false);
+      }
+    };
+
+    window.addEventListener('scroll', checkScrollTop);
+    return () => window.removeEventListener('scroll', checkScrollTop);
+  }, [showScroll]);
+
+  const scrollTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <footer className="bg-slate-100 border-t border-slate-200 text-slate-600">
+    <footer className="bg-slate-100 border-t border-slate-200 text-slate-600 relative">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           
@@ -100,6 +122,15 @@ export const Footer: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Floating Back to Top Button */}
+      <button
+        onClick={scrollTop}
+        className={`fixed bottom-6 right-6 z-[999] p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg cursor-pointer transition-all duration-300 border-none flex items-center justify-center ${showScroll ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+        title="Quay lại đầu trang"
+      >
+        <ArrowUp className="w-5 h-5" />
+      </button>
     </footer>
   );
 };
