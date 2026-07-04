@@ -22,12 +22,12 @@ function getRoleFromToken(token: string): string | null {
     }
     return null;
   } catch (e) {
-    console.error('Failed to parse token in middleware:', e);
+    console.error('Failed to parse token in middleware/proxy:', e);
     return null;
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { nextUrl } = request;
 
   // Check if the user is logged in by verifying the existence of a token in cookies
@@ -39,7 +39,6 @@ export function middleware(request: NextRequest) {
   
   // Public routes might have dynamic parameters (like /products/[id]), 
   // so we check if the path starts with a public route or matches exactly.
-  // For strict matching, you can use a more advanced matching logic.
   const isPublicRoute = publicRoutes.some(route => {
     if (route === '/') return nextUrl.pathname === '/';
     return nextUrl.pathname.startsWith(route);
@@ -87,15 +86,16 @@ export function middleware(request: NextRequest) {
 
   // If logged in and trying to access an admin route
   if (isAdminRoute && isLoggedIn) {
-    // Note: Here we should ideally check the user's role from the token or profile.
-    // For now, this is a placeholder for role-based check if needed.
-    // console.log('Checking admin access for:', nextUrl.pathname);
+    const role = token ? getRoleFromToken(token) : null;
+    if (role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/', nextUrl));
+    }
   }
 
   return NextResponse.next();
 }
 
-// Optionally, configure the matcher to apply middleware only to specific paths
+// Optionally, configure the matcher to apply proxy only to specific paths
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
